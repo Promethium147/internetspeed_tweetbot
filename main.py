@@ -1,3 +1,7 @@
+# Measures your internet speed on speedtest.net
+# Then logs in on Twitter and complains if the internet is too slow ^^
+# github.com/Promethium147 on 2024-02-06
+
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.options import Options

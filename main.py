@@ -9,6 +9,8 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
+# You have to install the Webdriver Manager in the console with:
+# pip install webdriver-manager
 from webdriver_manager.chrome import ChromeDriverManager
 import time
 

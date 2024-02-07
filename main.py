@@ -16,6 +16,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 # You have to install the Webdriver Manager in the console with:
 # pip install webdriver-manager
+# Attention: it's webdriver DASH manager at install, but webdriver UNDERSCORE manager at import
 from webdriver_manager.chrome import ChromeDriverManager
 import time
 

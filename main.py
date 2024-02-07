@@ -2,6 +2,11 @@
 # Then logs in on Twitter and complains if the internet is too slow ^^
 # github.com/Promethium147 on 2024-02-06
 
+# TODO 
+# Don't care about that 50 billion popup
+# Don't wait a fixed time for the speedtest to be ended, 
+# but make a loop until the speed values are available
+
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.options import Options

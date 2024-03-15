@@ -32,7 +32,7 @@ BOT_DELAY = 2
 
 class InternetSpeedTwitterBot:
     def __init__(self):
-        self.driver = webdriver.Chrome()
+        self.driver = webdriver.Chrome(options=options)
         self.up = 0
         self.down = 0
 

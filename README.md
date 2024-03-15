@@ -1,6 +1,7 @@
 This Bot measures your internet-speed on speedtest.net
+
 If the values are lower than promised by your ISP,
-the Bot logs in on Twitter and complains about it.
+the bot logs in on Twitter and complains about it.
 
 Completely rewritten/changed in March 2024
 

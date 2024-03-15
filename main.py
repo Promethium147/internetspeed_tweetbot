@@ -1,11 +1,6 @@
 # Measures your internet speed on speedtest.net
 # Then logs in on Twitter and complains if the internet is too slow ^^
-# github.com/Promethium147 on 2024-02-06
-
-# TODO 
-# Don't care about that 50 billion popup
-# Don't wait a fixed time for the speedtest to be ended, 
-# but make a loop until the speed values are available
+# https://github.com/Promethium147/internetspeed_tweetbot, 2024-03-15
 
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
@@ -13,117 +8,118 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.service import Service
-# You have to install the Webdriver Manager in the console with:
-# pip install webdriver-manager
-# Attention: it's webdriver DASH manager at install, but webdriver UNDERSCORE manager at import
-from webdriver_manager.chrome import ChromeDriverManager
+
 import time
 
 options = Options()
 options.add_argument("--start-maximized")
 
-TEST_TIME = 45
-
 MAX_DOWN = 250
 MAX_UP = 30
 
 PROMISED_DOWN = 125
-PROMISED_UP = 30
+PROMISED_UP = 5
 
 PROVIDER = "@xxxxxxx"
 
-CHROME_DRIVER_PATH = "C:\\chromedriver"
-TWITTER_USERNAME = "xxxxxxx"
-TWITTER_PASSWORD = "xxxxxxx"
+TWITTER_USERNAME = "xxxxxxxxxxx"
+TWITTER_PASSWORD = "xxxxxxxxxxx"
+
+# The delays are not necessary for the function,
+# but maybe help to prevent bot detection
+BOT_DELAY = 2
 
 
 class InternetSpeedTwitterBot:
-    def __init__(self, driver_path):
-        self.driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+    def __init__(self):
+        self.driver = webdriver.Chrome()
         self.up = 0
         self.down = 0
 
     def get_internet_speed(self):
         self.driver.get("https://www.speedtest.net/")
 
-        time.sleep(3)
+        # Wait for the cookie popup and click to deny
+        WebDriverWait(self.driver, 20).until(ec.element_to_be_clickable((By.ID, "onetrust-reject-all-handler"))).click()
 
-        # Deny cookies
-        deny_button = self.driver.find_element(By.ID, "onetrust-reject-all-handler")
-        deny_button.click()
+        # Wait for the start button and click it
+        WebDriverWait(self.driver, 20).until(ec.element_to_be_clickable((By.CSS_SELECTOR, ".start-button a"))).click()
 
-        time.sleep(2)
+        time.sleep(4)
 
-        go_button = self.driver.find_element(By.CSS_SELECTOR, ".start-button a")
-        go_button.click()
+        # Find the speed selectors
+        down_speed = self.driver.find_element(By.CSS_SELECTOR, ".result-data-large.number.result-data-value.download-speed").text
+        up_speed = self.driver.find_element(By.CSS_SELECTOR, ".result-data-large.number.result-data-value.upload-speed").text
 
-        # Wait for the test to be done, adjust to your best values
-        time.sleep(TEST_TIME)
+        # Wait until the speed values are available
+        while down_speed == "—" or up_speed == "—":
+            time.sleep(1)
+            down_speed = self.driver.find_element(By.CSS_SELECTOR, ".result-data-large.number.result-data-value.download-speed").text
+            up_speed = self.driver.find_element(By.CSS_SELECTOR, ".result-data-large.number.result-data-value.upload-speed").text
 
-        # Close the 50-billion tests popup
-        billion_close = self.driver.find_element(By.CSS_SELECTOR, ".close-btn.pure-button.pure-button-primary")
-        billion_close.click()
+        self.down = float(down_speed)
+        self.up = float(up_speed)
 
-        time.sleep(2)
+    def calculations(self):
 
-        # Extract the speed values
-        self.down = self.driver.find_element(By.XPATH, '/html/body/div[3]/div/div[3]/div/div/div/div[2]/div[3]/div[3]/div/div[3]/div/div/div[2]/div[1]/div[1]/div/div[2]/span').text
-        self.up = self.driver.find_element(By.XPATH, '/html/body/div[3]/div/div[3]/div/div/div/div[2]/div[3]/div[3]/div/div[3]/div/div/div[2]/div[1]/div[2]/div/div[2]/span').text
+        promised_percent_down = round((self.down/PROMISED_DOWN) * 100, 2)
+        promised_percent_up = round((self.up/PROMISED_UP) * 100, 2)
 
-    def tweet_at_provider(self):
+        max_percent_down = round((self.down/MAX_DOWN) * 100, 2)
+        max_percent_up = round((self.up/MAX_UP) * 100, 2)
+
+        # If the internet speed is below the promised speed, tweet at the provider
+        if self.down < PROMISED_DOWN or self.up < PROMISED_UP:
+            self.tweet_at_provider(promised_percent_up, promised_percent_down, max_percent_up, max_percent_down)
+        else:
+            print(f"Current Internet-Speed: {self.down} Down / {self.up} Up.\n"
+                  f"That is {max_percent_down}% of maximum Down, {max_percent_up}% of maximum Up and\n "
+                  f"{promised_percent_down}% of guaranteed Down.\n"
+                  f"Complaints to {PROVIDER} are not necessary.\n")
+
+    def tweet_at_provider(self, promised_up, promised_down, max_up, max_down):
+        # Only gets called if the internet speed is below the promised speed
 
         self.driver.get("https://twitter.com/i/flow/login")
 
-        time.sleep(2)
+        time.sleep(BOT_DELAY)
 
         # Enter username
         WebDriverWait(self.driver, 20).until(ec.element_to_be_clickable((By.CSS_SELECTOR, "input[autocomplete='username']"))).send_keys(TWITTER_USERNAME)
-        WebDriverWait(self.driver, 20).until(
-            ec.element_to_be_clickable((By.CSS_SELECTOR, "input[autocomplete='username']"))).send_keys(Keys.ENTER)
+        WebDriverWait(self.driver, 20).until(ec.element_to_be_clickable((By.CSS_SELECTOR, "input[autocomplete='username']"))).send_keys(Keys.ENTER)
 
-        time.sleep(2)
+        time.sleep(BOT_DELAY)
 
         # Enter password
         WebDriverWait(self.driver, 20).until(ec.element_to_be_clickable((By.CSS_SELECTOR, "input[autocomplete='current-password']"))).send_keys(TWITTER_PASSWORD)
-        WebDriverWait(self.driver, 20).until(
-            ec.element_to_be_clickable((By.CSS_SELECTOR, "input[autocomplete='current-password']"))).send_keys(Keys.ENTER)
+        WebDriverWait(self.driver, 20).until(ec.element_to_be_clickable((By.CSS_SELECTOR, "input[autocomplete='current-password']"))).send_keys(Keys.ENTER)
 
-        time.sleep(7)
+        time.sleep(BOT_DELAY)
 
-        # Do a few calculations
-        down_number = float(self.down)
-        up_number = float(self.up)
+        tweet = (f"Current Internet-Speed: {self.down} Down / {self.up} Up. "
+                 f"That is {max_down}% of maximum Down and {max_up}% of maximum Up and "
+                 f"{promised_down}% of guaranteed Down. "
+                 f"Provider: {PROVIDER}")
 
-        promised_percent_down = round((down_number/PROMISED_DOWN) * 100, 2)
-        promised_percent_up = round((up_number/PROMISED_UP) * 100, 2)
+        textbox = WebDriverWait(self.driver, 5).until(ec.presence_of_element_located((By.CSS_SELECTOR, '.notranslate')))
+        textbox.send_keys(tweet)
 
-        max_percent_down = round((down_number/MAX_DOWN) * 100, 2)
-        max_percent_up = round((up_number/MAX_UP) * 100, 2)
+        time.sleep(BOT_DELAY)
 
-        if down_number < PROMISED_DOWN or up_number < PROMISED_UP:
-            tweet = (f"Current Internet-Speed: {self.down} Down / {self.up} Up. "
-                     f"That is {max_percent_down}% of maximum Down and {max_percent_up}% of maximum Up and {promised_percent_down}% of guaranteed Down. "
-                     f"Provider: {PROVIDER}")
-            textbox = WebDriverWait(self.driver, 5).until(ec.presence_of_element_located((By.CSS_SELECTOR, '.notranslate')))
-            textbox.send_keys(tweet)
-            # Send Enter to confirm your provider in the popup
-            textbox.send_keys(Keys.RETURN)
+        # Send Enter to confirm your provider in the popup
+        textbox.send_keys(Keys.RETURN)
 
-            send_button = WebDriverWait(self.driver, 5).until(ec.presence_of_element_located((By.XPATH, '//*[@id="react-root"]/div/div/div[2]/main/div/div/div/div/div/div[3]/div/div[2]/div[1]/div/div/div/div[2]/div[2]/div[2]/div/div/div/div[3]/div/span/span')))
-            send_button.click()
+        time.sleep(BOT_DELAY)
 
-            time.sleep(1)
+        send_button = WebDriverWait(self.driver, 5).until(ec.presence_of_element_located((By.XPATH, '//*[@id="react-root"]/div/div/div[2]/main/div/div/div/div/div/div[3]/div/div[2]/div[1]/div/div/div/div[2]/div[2]/div[2]/div/div/div/div[3]/div/span/span')))
+        send_button.click()
 
-            # Close that "Got it" Popup
-            got_it_button = WebDriverWait(self.driver, 5).until(ec.presence_of_element_located((By.XPATH, '//*[@id="layers"]/div[3]/div/div/div/div/div/div[2]/div[2]/div/div[2]/div/div[2]/div[3]/div/div')))
-            got_it_button.click()
-
-            time.sleep(10)
+        # You can close the browser now, but I'll keep it open for a while to see the tweet for debugging purposes
+        time.sleep(10)
 
         self.driver.quit()
 
 
-bot = InternetSpeedTwitterBot(CHROME_DRIVER_PATH)
+bot = InternetSpeedTwitterBot()
 bot.get_internet_speed()
-bot.tweet_at_provider()
+bot.calculations()
